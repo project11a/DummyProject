@@ -33,22 +33,37 @@ But this is less obvious as it may seem at first. We'd still have to
 overcome the issue of slow changes as we'd need to adjust the indexes each time,
 possibly even up to the root (and the root would be a log(length, 2) far away).
 This would make sure that the supermost keeps pointing to the middle and cause
-seriuos calculation overheads.
+seriuos calculation overheads. If we'd skip that entirely, a chain becomes as 
+long as the entire list in the worst case. The Solution would be to track the 
+number of nodes beyond a given one and the corresponding algorythm to process 
+this data (basically cut a slice of the chain and add it reversedly to the
+next node beyond that slice (which is easier if it's pointer is 0)).
+The second is to define a maximum distance to the next node that is directly 
+linked with a superior node (until node count is 1). This way, the calculation 
+overhead reduces. One bad aspect of this approach is still the distance of a node.
 
-Mappings on Mappings
-Fixed number of nodes per map
-map levels required: log(length, number_of_nodes) 
-total maps required: 
+A bad aspect of either approach is indexing. Speaking for the second approach,
+you're still able to easily get few results in their sorted order while beeing able
+to tell the actual index becomes complicated. A good solution here may be to track
+the indexes at the second layer, guess it from above and calculate it beyond.
+
+map levels required: log(length, distance) 
 map count changes dynamically
-map stats are to be kept just in time:
-	when removing: fail
-	when adding: 
+maximum addressable space with 64bits:  16 EiB (Quintillions/Trilions)
+			       48bits: 256 TiB 
+			       40bits:   1 TiB (Trilions/Bilions)
+the maximum file size may be increased if the underlying sparse controller is
+being operated 
+worst resource usage with 64bits: 24 (+8) Bytes / row
++8 applies for the second layer
+48bits seems to be a resonable choice for most drives 
+
 '''
 from system.data import sparse
 
 class ABS(object):
   def __init__(self, sparse):
-    self
+    self.sparse = sparse
 
 class Map(object):
   def __init__(self, mgr, offset):
