@@ -118,12 +118,27 @@ class ABC(object):
     ## API
 
     def find(self, fn):
+        ''' reversed root finding algorythm
+            fn should return True for higher values '''
+        m = self
+        s = [0, len(self.map)-1]
+        while s[1] - s[0] > 0:
+            mid = (s[1]-s[0]+1) // 2 + s[0] # This is a bisection!
+            if fn(self._mapDown(self.map[mid], self.layers)):
+                s[0] = mid
+            else:
+                s[1] = mid-1 # the entire map falls off
+        return self._find(fn, self.map[mid], self.layers)
+
+    def _find(self, fn, of, layer):
         ''' reversed root finding algorythm '''
-        l = self.layers
+        l = layer
+        m = self.sparse
         s = [0, len(self.map)]
         while l > 0:
             while len(s) > 1:
-                mid = (s[1]-s[0]) / 2 + s[0] # This is a bisection!
+                mid = (s[1]-s[0]+1) / 2 + s[0] # This is a bisection!
+                if fn(self._mapDown(self._mapAddr(
         
     def next(self, of, p):
         ''' returns the result as well as the map offset and position
