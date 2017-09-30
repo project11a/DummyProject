@@ -1,4 +1,4 @@
-''' Dummy Project Copyright J. Boss
+''' Dummy Project Copyright (c) 2017 Johnny Boss
 
 /system/data/abc.py
 
@@ -58,12 +58,12 @@ way further.
 You may use this information to tweak some pieces for specific hardware (eg. align
 the sparse allocations with the block device (if it is one) and keep using most of
 it's capacity).
-You'll like to see the docs for system.data.sparse and system.data.sparse.chain.
+You'll like to see the docs for system.data.sparse.
 As the system optimizes most on the lowest layer, lowest fragmentation is desireable 
 (what is limiting the maximum distance to a higher value). This has significant impact
 on finding multiple results at once. If you'd like to align with 2KiB blocks, this would
 give you space for 254 64bit values without having to allocate another block. Processing 
-2KiB each time at once (when it changes) is maybe a bit too rough, 512B sounds more resonable.
+2KiB each time at once (when it changes) is maybe a bit too rough, 512B sounds more reasonable.
 
 map levels required: log(length, distance) 
 map count changes dynamically
@@ -104,7 +104,7 @@ class ABC(object):
         self._al = b"\x00" * self.asize
         self._ah = b"\xff" * self.asize
         m = sparse.mmap(0, 1)
-        self.layers = ord(m[0])
+        self.layers = ord(m[0]) # the lowest layer is... (0/1)?
         self.map = [] # the uppermost map is here all the time
         off = 1
         while len(self.map) < dist:
@@ -117,9 +117,11 @@ class ABC(object):
         
     ## API
 
+    # TODO: is it bisect or is it bisect_left? (find the first in sorted order?)
     def find(self, fn):
         ''' reversed root finding algorythm
-            fn should return True for higher values '''
+            returns the result as well as the map offset and position (required for further results)
+            fn should return True to find higher or equal values '''
         m = self
         s = [0, len(self.map)-1]
         while s[1] - s[0] > 0:
@@ -133,16 +135,30 @@ class ABC(object):
     def _find(self, fn, of, layer):
         ''' reversed root finding algorythm '''
         l = layer
-        m = self.sparse
+        m = self.sparse.mmap(of, 1)
         s = [0, len(self.map)]
-        while l > 0:
-            while len(s) > 1:
+        while l > 0: # assuming that 0 will be the lowest (not inexistent)
+            while s[1] - s[0] > 0:
                 mid = (s[1]-s[0]+1) / 2 + s[0] # This is a bisection!
-                if fn(self._mapDown(self._mapAddr(
-        
+                of = self._mapAddr(m, mid)
+                if fn(self._mapDown(of, l)):
+                    s[0] = mid
+                else:
+                    s[0] = mid-1
+            m = self.sparse.mmap(of, 1)
+            l -= 1
+            s = [0, self._mapCount(m)]
+        while s[1] - s[0] > 0:
+            mid = (s[1]-s[0]+1) / 2 + s[0] # This is a bisection!
+            v = self._mapItem(m, mid)
+            if fn(v):
+                s[0] = mid
+            else:
+                s[0] = mid-1
+        return v, of, mid # careful, offset is taken down from the loop
+         
     def next(self, of, p):
-        ''' returns the result as well as the map offset and position
-            may move at most one map forward '''
+        ''' may move at most one map forward '''
         m = self.sparse.mmap(of, 1)
         v = p+1
         q = self._mapCount(m)
@@ -167,6 +183,15 @@ class ABC(object):
         ret = self._mapItem(m, v)
         m.close()
         return ret, of, v
+    
+    def inject(self, of, p, v):
+        ''' inject v at the given position 
+            this part of the code may become a problem in thread-safety (maybe deploy an extra API)
+            WARNING: manipulations are likely to affect indexes (p), make sure
+                     that it is real for each call '''
+        
+    def eject(self, of, p):
+        ''' remove the given position '''
         
     ## Core
     
