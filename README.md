@@ -1,5 +1,5 @@
 # DummyProject
-Most of the project is missing here, sorry. Will have to update soon. So far, check the [wiki](wiki) for intel.
+Most of the project is missing here, sorry. Will have to update soon. So far, check the [wiki](https://www.github.com/project11a/DummyProject/wiki) for intel.
 
 ## Installation
 Installation of this thing is weird. Initial configs need to take place and things may need to be arranged in a way, which is nowhere documented. However, once it is copy-installed with configs included, no extra steps are required but few things may not be set up in a way you want it. Have a look at those specific parts to fix it.
